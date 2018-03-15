@@ -11,7 +11,13 @@ if(!$conn)
 }
 else
 {
-	$sql1 = "Select * from blogs order by blog_timestamp desc";
+	if(isset($_GET['category'])){
+		$category = $_GET['category'];
+		$sql1 = "select * from blogs where blog_category = '$category' order by blog_timestamp desc";
+	}
+	else{		
+		$sql1 = "Select * from blogs order by blog_timestamp desc";
+	}
 	$result1 = mysqli_query($conn,$sql1);
 	if(!$result1)
 	{
@@ -52,6 +58,16 @@ else
 	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 	<link href="styles/css/normalize.css" rel="stylesheet" type="text/css">
 	<style type="text/css">
+    .noselect {
+      -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+         -khtml-user-select: none; /* Konqueror HTML */
+           -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+                user-select: none; /* Non-prefixed version, currently
+                                      supported by Chrome and Opera */
+    }
+		
 		input {
 		  width: 100%;
 		  border-color: 1px solid black !important;
@@ -137,7 +153,7 @@ else
 <!-- CSS
 ================================================== -->
 
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	<script type="text/javascript">
 		console.log(sessionStorage.getItem('status'));
 		$(document).ready(function(){
@@ -163,7 +179,7 @@ else
 		    if(sessionStorage.getItem('status')){ //check if user has logged in
 		    
 		      //diable the button
-		      $(this).attr('disabled',true);
+		      //$(this).attr('disabled',true);
 
 		      var id = this.id;   // Getting Button id
 		      var split_id = id.split("_");
@@ -177,12 +193,12 @@ else
 		          type = 1;									
 		      }
 		      else{
-		          type = 0;                  
+		          type = 0;
 		      }
 		      console.log(blogid+" "+type);
 		      // AJAX Request
 		      $.ajax({
-		          url: 'like.php',
+		          url: 'blog_like.php',
 		          type: 'post',
 		          data: {b_id:blogid,action:type},
 		          dataType: 'json',
@@ -201,45 +217,57 @@ else
 		            	$("#unlike_"+blogid).attr("id","like_"+blogid);
 		            }
 		            //enable the button
-		            $(this).attr('disabled',false);
+		            //$(this).attr('disabled',false);
 		          }                  	                  
 		      });
 		    }
 		    else{
-		      alert("You have to be logged in to give a like!");
+		      alert("You have to be logged in to save!");
 		    }
 
 		  });
 				
 			  // bookmark
 		  $(".save, .remove").click(function(){
-		    var id = this.id;   // Getting Button id
-		    var split_id = id.split("_");
+		  	if(sessionStorage.getItem('status')){
+			    var id = this.id;   // Getting Button id
+			    var split_id = id.split("_");
 
-		    var text = split_id[0];
-		    var blogid = split_id[1];  // postid
+			    var text = split_id[0];
+			    var blogid = split_id[1];  // postid
 
-		    // Finding click type
-		    var type = 0;
-		    if(text == "save"){
-		        type = 1;
-								$(this).attr("class","remove icon-bookmark icon-large");
-								$(this).attr("id","remove_"+blogid);
-		    }else{
-		        type = 0;
-		        $(this).attr("class","save icon-bookmark-empty icon-large");
-		        $(this).attr("id","save_"+blogid);
-		    }
-
-		    /* AJAX Request
-		    $.ajax({
-		        url: 'like.php',
+			    // Finding click type
+			    var type = 0;
+			    if(text == "save"){
+			        type = 1;
+			    }else{
+			        type = 0;
+			    }
+			    console.log(blogid+" "+type);
+			    $.ajax({
+		        url: 'blog_save.php',
 		        type: 'post',
-		        data: {id:blogid,action:type},
+		        data: {b_id:blogid,action:type},
 		        dataType: 'json',
-		        success: function(){}                  	                  
-		    });*/
-
+		        success: function(data){
+		        	console.log(data);
+		                        
+	            if(type == 1){
+	                  $("#save_"+blogid).attr("class","remove icon-bookmark icon-large");
+	  								$("#save_"+blogid).attr("id","remove_"+blogid);	
+	            }
+	            else{
+	            	$("#remove_"+blogid).attr("class","save icon-bookmark-empty icon-large");
+	            	$("#remove_"+blogid).attr("id","save_"+blogid);
+	            }
+	            //enable the button
+	            //$(this).attr('disabled',false);
+		        }			                          	                  
+			    });
+			  }
+			  else{
+		    	alert("You have to be logged in to save blogs!");
+		    }
 		  });
 			
 		});
@@ -334,19 +362,36 @@ else
 						}
 
 						$query4="select count(*) from blog_likes where blog_id=$blog_id;";
-
 						$likes=mysqli_fetch_array(mysqli_query($conn,$query4));
+
+						//check if user has saved the blog
+						if(isset($_SESSION['rn'])){
+							$query5="select blog_id from blog_saves where blog_id=$blog_id and user_id=$u_roll;";
+							$result5=mysqli_query($conn,$query5);
+							if(mysqli_num_rows($result5)>0)
+							{
+								$saved=1;
+							}
+							else
+							{
+								$saved=0;
+							}							
+						}
+						else{
+							$saved=0;													
+						}
+
 					
 					?>	
 
 					<div class="card mb-3" id="<?php echo $blog_id ?>">
 						<div class="card-body">
 							<h4 style="margin:0" class="card-title font-weight-bold"><?php echo $title ?></h4>
-							<p style="margin:0"><em>by:<?php echo $author ?></em></p>
-							<p><span class="badge badge-pill badge-secondary"><?php echo $category ?></span><p>
+							<p style="margin:0"><a href="#"><em>by:<?php echo $author ?></em></a></p>
+							<p><span class="badge badge-pill badge-secondary"><a href="blogs.php?category=<?php echo $category ?>"><?php echo $category ?></a></span><p>
 							<p class="card-text blog_content"><?php echo $content ?></p>
 						</div>
-						<div class="card-footer">
+						<div class="card-footer noselect">
 							<?php
 							if($liked==1)
 							{
@@ -358,8 +403,16 @@ else
 							}
 							?>
 							
-
-							<i id="save_<?php echo $blog_id; ?>" class="save icon-bookmark-empty icon-large"></i>&nbsp;
+							<?php
+							if($saved==1)
+							{
+								echo '<i id="remove_'.$blog_id.'" class="save icon-bookmark icon-large"></i>&nbsp;';  
+							}
+							else
+							{
+								echo '<i id="save_'.$blog_id.'" class="save icon-bookmark-empty icon-large"></i>&nbsp;';  
+							}
+							?>
 
 							<i class="share icon-share-alt icon-large"></i>&nbsp;										
 							<div class="dropdown" style="display:inline;float:right">
