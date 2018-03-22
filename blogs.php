@@ -48,7 +48,7 @@ else
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
 	<meta name="description" content="">
 	<meta name="author" content="">
-	<link rel="icon" href="">
+	<link rel="icon" 2href="">
 <!-- CSS
 ================================================== -->
 
@@ -484,9 +484,9 @@ else
 
 
 
-			</div>
-		</div>
-	</div>
+			</div><!--col-md-8-->
+		</div><!-- row-->
+	</div><!-- Container-->
 
 	<!--===========FOOTER======================-->
 							<div id="footer">
@@ -529,6 +529,7 @@ else
 										<small>&lt;Made by Coders' Club&copy;,FCRIT/&gt;</small></i>
 								</div>
 						</div>
+
 		<!--===========END OF FOOTER======================-->
 
 
